@@ -1,0 +1,43 @@
+# APP DEPLOYMENT
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    run: hello-phoenix-app
+  name: hello-phoenix-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: hello-phoenix-app-exposed
+  template:
+    metadata:
+      labels:
+        run: hello-phoenix-app-exposed
+    spec:
+      containers:
+      - image: localhost:4000/hello_phoenix_app:0.1.0
+        name: hello-phoenix-app
+        ports:
+        - containerPort: 80
+          protocol: TCP
+
+---
+
+# APP SERVICE
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    run: hello-phoenix-app
+  name: hello-phoenix-app
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    run: hello-phoenix-app-exposed
+  type: NodePort
