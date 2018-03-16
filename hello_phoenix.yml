@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - image: localhost:4000/hello_phoenix_app:0.1.0
-        name: hello-phoenix-app
+        name: hello_phoenix_app
         ports:
         - containerPort: 80
           protocol: TCP
