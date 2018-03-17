@@ -39,5 +39,5 @@ config :hello_world, HelloWorld.Repo,
   username: "postgres",
   password: "postgres",
   database: "hello_world_dev",
-  hostname: "db",
+  hostname: "localhost",
   pool_size: 10

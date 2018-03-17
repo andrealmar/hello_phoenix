@@ -1,29 +1,32 @@
 # base image elixir
-FROM elixir:1.6-slim
+FROM elixir:alpine
 
-# skip post-install steps
-ENV DEBIAN_FRONTEND=noninteractive
+ARG APP_NAME=hello_world
+ARG PHOENIX_SUBDIR=.
+ENV MIX_ENV=prod REPLACE_OS_VARS=true TERM=xterm
 
-# install Hex package manager
-RUN mix local.hex --force
+WORKDIR /opt/app
+RUN apk update \
+    && apk --no-cache --update add nodejs nodejs-npm \
+    && mix local.rebar --force \
+    && mix local.hex --force
 
-# Install rebar (Erlang build tool)
-RUN mix local.rebar --force
+COPY . .
+RUN mix do deps.get, deps.compile, compile
 
-# install the latest version of Phoenix Framework
-RUN mix archive.install https://github.com/phoenixframework/archives/raw/master/phoenix_new.ez --force
+RUN cd ${PHOENIX_SUBDIR} \
+    && npm install \
+    && ./node_modules/brunch/bin/brunch build -p \
+    && mix phoenix.digest
 
-# Install NodeJS 6.x and the NPM
-RUN apt-get update; apt-get install -y curl
-RUN curl -sL https://deb.nodesource.com/setup_6.x | bash -
-RUN apt-get install -y -q nodejs
+RUN mix release --env=prod --verbose \
+    && mv _build/prod/rel/${APP_NAME} /opt/release \
+    && mv /opt/release/bin/${APP_NAME} /opt/release/bin/start_server
 
-# create app folder
-WORKDIR /app
-ADD . /app
-
-# install dependencies
-RUN mix deps.get
-
-# run phoenix in *dev* mode on port 4000
-# CMD mix phoenix.server
+FROM alpine:latest
+RUN apk update && apk --no-cache --update add bash openssl-dev
+ENV PORT=8080 MIX_ENV=prod REPLACE_OS_VARS=true
+WORKDIR /opt/app
+EXPOSE ${PORT}
+COPY --from=0 /opt/release .
+CMD ["/opt/app/bin/start_server", "foreground"]
